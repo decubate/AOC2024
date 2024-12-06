@@ -4,54 +4,64 @@ import getLines
 
 fun main() {
     val solver = Dec06()
-    solver.partOne()
+    solver.partTwo()
 }
 
 class Dec06 {
     fun partOne() {
         val matrix = getLines("day06").map { it.toCharArray() }
-        var position: Point = getPosition(matrix, '^')!!
-        var direction = Direction.UP
+        val position: Point = getPosition(matrix, '^')!!
+        val direction = Direction.UP
 
-        val visitedPoints = mutableSetOf(Pair(position.i, position.j))
-        try {
-            while (true) {
-                var nextPosition = position.getNextPosition(direction, matrix.map { it.toMutableList() })
-                while (nextPosition.value == '#') {
-                    direction = direction.getNext()
-                    nextPosition = position.getNextPosition(direction, matrix.map { it.toMutableList() })
-                }
-                position = nextPosition
-                visitedPoints.add(Pair(position.i, position.j))
-            }
-        } catch (_: Exception) {
-            println(visitedPoints.size)
-        }
+        println(getVisitedPoints(position, direction, matrix).size)
     }
 
     fun partTwo() {
+        val startTime = System.currentTimeMillis()
         val matrix = getLines("day06").map { it.toCharArray() }
         val position: Point = getPosition(matrix, '^')!!
         val direction = Direction.UP
 
         var numLoops = 0
         var currentMatrix = 0
-        matrix.forEachIndexed { i, chars ->
-            chars.forEachIndexed { j, c ->
-                if (c != '^') {
-                    val newMatrix = matrix.toMutableList().map { it.toMutableList() }
-                    newMatrix[i][j] = '#'
-                    if (currentMatrix % 100 == 0) {
-                        println("checking matrix $currentMatrix")
-                    }
-                    if (newMatrix.containsLoop(position, direction)) {
-                        numLoops++
-                    }
-                    currentMatrix++
-                }
+
+        getVisitedPoints(position, direction, matrix).also { println(it) }.drop(1).forEach {
+            matrix[it.first][it.second] = '#'
+            if (currentMatrix % 1000 == 0) {
+                println("checking matrix $currentMatrix")
             }
+            if (matrix.containsLoop(position, direction)) {
+                numLoops++
+            }
+            matrix[it.first][it.second] = '.'
+            currentMatrix++
         }
+
         println(numLoops)
+        println("took ${System.currentTimeMillis() - startTime}ms")
+    }
+
+    private fun getVisitedPoints(
+        pos: Point,
+        dir: Direction,
+        matrix: List<CharArray>
+    ): MutableSet<Pair<Int, Int>> {
+        var position = pos
+        var direction = dir
+        val visitedPoints = mutableSetOf(Pair(position.i, position.j))
+        try {
+            while (true) {
+                var nextPosition = position.getNextPosition(direction, matrix)
+                while (nextPosition.value == '#') {
+                    direction = direction.getNext()
+                    nextPosition = position.getNextPosition(direction, matrix)
+                }
+                position = nextPosition
+                visitedPoints.add(Pair(position.i, position.j))
+            }
+        } catch (_: Exception) {
+            return visitedPoints
+        }
     }
 
     private fun getPosition(matrix: List<CharArray>, s: Char): Point? {
@@ -64,13 +74,11 @@ class Dec06 {
         }
         return null
     }
-
-
 }
 
-private fun List<List<Char>>.containsLoop(pos: Point, dir: Direction): Boolean {
+private fun List<CharArray>.containsLoop(pos: Point, dir: Direction): Boolean {
     var position = pos
-    val visitedPoints = mutableListOf(PointWithDirection(pos.i, pos.j, dir))
+    val visitedPoints = mutableSetOf(PointWithDirection(pos.i, pos.j, dir))
     var direction = dir
     try {
         while (true) {
@@ -94,7 +102,7 @@ data class PointWithDirection(val i: Int, val j: Int, val direction: Direction)
 
 data class Point(val i: Int, val j: Int, val value: Char) {
 
-    fun getNextPosition(direction: Direction, matrix: List<List<Char>>): Point {
+    fun getNextPosition(direction: Direction, matrix: List<CharArray>): Point {
         return when (direction) {
             Direction.UP -> Point(i-1, j, matrix[i-1][j])
             Direction.DOWN -> Point(i + 1, j, matrix[i+1][j])
