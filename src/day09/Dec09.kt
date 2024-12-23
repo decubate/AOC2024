@@ -4,7 +4,7 @@ import getLines
 
 fun main() {
     val solver = Dec09()
-    solver.partOne()
+    solver.partTwo()
 }
 
 class Dec09 {
@@ -25,6 +25,45 @@ class Dec09 {
 
         println(completeMemory.checkSum())
 
+    }
+
+    fun partTwo() {
+        val diskMap = getLines("day09")[0]
+        val completeMemory = getCompleteMemory(diskMap).toMutableList()
+
+        val originalBlocks = mutableListOf<Int>()
+        completeMemory.forEach {
+            if (it != null && !originalBlocks.contains(it)) originalBlocks.add(it)
+        }
+        originalBlocks.sortDescending()
+
+        for (block in originalBlocks) {
+            val indexOfFirst = completeMemory.indexOfFirst { it == block }
+            val indexOfLast = completeMemory.indexOfLast { it == block }
+            val sizeOfBlock = (indexOfLast - indexOfFirst) + 1
+
+            var lengthOfSpace = 0
+            for (i in 0..<completeMemory.size) {
+                if (i >= indexOfFirst) break
+                val place = completeMemory[i]
+                if (place == null) {
+                    lengthOfSpace++
+                } else {
+                    lengthOfSpace = 0
+                }
+                if (lengthOfSpace == sizeOfBlock) {
+                    for (j in (i - (lengthOfSpace - 1))..i) {
+                        completeMemory[j] = block
+                    }
+                    for (k in indexOfFirst..indexOfLast) {
+                        completeMemory[k] = null
+                    }
+                    break
+                }
+            }
+        }
+
+        println(completeMemory.checkSum())
     }
 
     private fun getCompleteMemory(diskMap: String): List<Int?> {
